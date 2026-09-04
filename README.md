@@ -43,13 +43,17 @@ Both branches clamp the computed 0–255 speed to its boundaries, so any pulse b
 
 ## Flashing
 
-Compile v2 with `arduino-cli`:
+The easiest way is to open `RC_Car_FNG_v2/RC_Car_FNG_v2.ino` in the Arduino IDE, select **Arduino Pro or Pro Mini** as the board, **ATmega328P (5V, 16MHz)** as the processor, and hit Upload.
+
+In our case the IDE couldn't sync with the Pro Mini over the CP2102 USB adapter (the bootloader was fine but the adapter had a USB timing issue with optiboot). We used `arduino-cli` to compile and an ISP programmer (Nano-as-ISP) to flash instead.
+
+Compile:
 
 ```
 arduino-cli compile --fqbn arduino:avr:pro:cpu=16MHzatmega328 RC_Car_FNG_v2
 ```
 
-The Pro Mini in this project has no usable serial bootloader sync on the CP2102 adapter, so flashing is done over ISP using a Nano-as-ISP programmer:
+Flash over ISP:
 
 ```
 avrdude -C avrdude.conf -p atmega328p -c avrisp -P COM9 -b 57600 -e -U flash:w:RC_Car_FNG_v2.ino.hex:i
