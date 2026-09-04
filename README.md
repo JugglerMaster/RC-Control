@@ -1,6 +1,9 @@
 # RC-Control
 
-Firmware for an Arduino Pro Mini (5V / 16MHz ATmega328P) RC car, read from a hobby RC receiver and driving a TB6612-style motor driver (FNG chip) with dual-speed control and gear-activated lighting.
+Firmware for Arduino Pro Mini (5V / 16MHz ATmega328P) RC cars, read from hobby RC receivers. The repo covers two motor driver setups:
+
+- **FNG / TB6612** — the primary project (v1 and v2), with a median-of-3 dirty-data filter and retuned throttle scaling.
+- **L293D** — a separate 2023 car build with different pin mappings and speed clamping.
 
 ## Overview
 
@@ -11,12 +14,11 @@ Firmware for an Arduino Pro Mini (5V / 16MHz ATmega328P) RC car, read from a hob
 
 ## Versions
 
-The repo contains two builds of the sketch, each in its own folder:
-
-| Folder             | Version | Description                                                        |
-|--------------------|---------|--------------------------------------------------------------------|
-| `RC_Car_FNG_v2/`  | **v2**  | Current working build: median-of-3 dirty-data filter, retuned throttle ranges/scaling for a new car and receiver. An update of v1. |
-| `RC_Car_FNG_v1/`  | **v1**  | Original 2018 build, heavily modified from the original author's code. Kept as a reference. |
+| Folder                              | Version | Description                                                        |
+|-------------------------------------|---------|--------------------------------------------------------------------|
+| `RC_Car_FNG_v2/`                    | **v2**  | Current FNG build: median-of-3 dirty-data filter, retuned throttle for a new car and receiver. |
+| `RC_Car_FNG_v1/`                    | **v1**  | Original 2018 FNG build, heavily modified from the original author's code. |
+| `RC_Car_L293D_New_Control_2023/`    |         | Separate 2023 build for a car using an L293D motor driver.        |
 
 ## Pin wiring
 
@@ -40,6 +42,26 @@ The repo contains two builds of the sketch, each in its own folder:
 - **Forward:** pulse `1500–1900 µs` → speed `(pulse − 1468)/1.63`
 
 Both branches clamp the computed 0–255 speed to its boundaries, so any pulse beyond the range holds full speed rather than stalling. The `1.96`-style divisor (`travel/255`) keeps the full throw mapped to exactly 255.
+
+### L293D build (`RC_Car_L293D_New_Control_2023/`)
+
+A separate 2023 car using an L293D motor driver with two directional PWM pins instead of the FNG's IN1/IN2 + single PWM. Throttle ranges from the original receiver:
+
+- **Backward:** pulse `999–1440 µs` → speed `255 − (pulse − 1000)/1.96`, floor at 50
+- **Neutral:** pulse `1440–1560 µs` → coast
+- **Forward:** pulse `1560–2100 µs` → speed `(pulse − 1500)/1.96`, snaps to 255 above 210
+
+| Arduino pin | Function                         |
+|-------------|----------------------------------|
+| A1          | Throttle channel input           |
+| A2          | Gear channel input               |
+| A6          | Battery voltage sense            |
+| 3           | Direction B (motor)              |
+| 4           | Battery low LED                  |
+| 5           | Direction A (motor)              |
+| 6           | Rear light                       |
+| 9           | Front left light                 |
+| 10          | Front right light                |
 
 ## Flashing
 
