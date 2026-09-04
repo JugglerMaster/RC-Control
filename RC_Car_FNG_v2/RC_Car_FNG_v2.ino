@@ -1,6 +1,11 @@
 
-//Not all this code is mine
-//it was taken from http://rcarduino.blogspot.com/2012/01/how-to-read-rc-receiver-with.html
+//RC Car Firmware - v2 (update of v1, used in a different car setup)
+//Original idea/reading code from http://rcarduino.blogspot.com/2012/01/how-to-read-rc-receiver-with.html
+//This build is an update of the original (v1, RC_Car_FNG_v1.ino) and was used in a
+//separate car setup. Changes include:
+//  - Added a median-of-3 dirty-data filter to discard one-off corrupt pulse readings
+//  - Retuned throttle pulse ranges and 1.96-style scaling for a new receiver
+//  - Values outside the range clamp to the max speed instead of dropping out
 
 #include <Wire.h>
 #include <EnableInterrupt.h>
@@ -63,7 +68,6 @@ void setup() {
 
 void loop() {
   //Serial.println("lights flag");
-  //delay(100);
 //vars that change per loop
 static uint16_t unThrottleIn;
 static uint16_t unGearIn;
@@ -169,52 +173,53 @@ void setLights(uint16_t unGearIn){
   
 }
 void setSpeed(uint16_t unThrottleIn){
-  if(unThrottleIn<1440 & unThrottleIn>999){
-    //min speed 1000
-    //forwards
-    //calculate the speed to a number within 0 and 255 for going up and down on the stick
-    tempSpeed=(255-((unThrottleIn-1000)/3));
-    //Serial.println(unThrottleIn);
-    //Serial.println(275-(unThrottleIn-1000)/1.96);
-    //if the number is below zero, something is wrong with the receiver/calculation and set it to zero
+  //dirty data filter: median of last 3 readings removes one-off corrupt samples
+  //while still tracking genuine fast throws (a new stable value becomes the median)
+  static uint16_t m1 = 0, m2 = 0, m3 = 0;
+  if(unThrottleIn < 500 || unThrottleIn > 2500){
+    return; //out of RC pulse band, ignore
+  }
+  m3 = m2;
+  m2 = m1;
+  m1 = unThrottleIn;
+  //only use the reading once we have a full 3-sample window
+  if(m3 != 0){
+    uint16_t a = m1, b = m2, c = m3;
+    //simple median of three
+    if(a > b){ uint16_t t = a; a = b; b = t; }
+    if(b > c){ uint16_t t = b; b = c; c = t; }
+    if(a > b){ uint16_t t = a; a = b; b = t; }
+    unThrottleIn = b;
+  }
+  if(unThrottleIn <= 1439 & unThrottleIn >= 1060){
+    //backwards: 1060 = full reverse, 1439 = dead zone edge
+    //1.96-style scale: (1468-1072)/255 = 1.55 -> full reverse = 255
+    tempSpeed = (1468 - unThrottleIn) / 1.55;
     if(tempSpeed<0){
       tempSpeed=0;
     }
-    if(tempSpeed>234){
-      tempSpeed=255;
-    }
-    //just for printing speed but disabled during non-debugging
-    //Serial.println((int)tempSpeed);
-    
-    //set the speed and then tell the shield to go "forward" but this is arbitrary
-    
-    //analogWrite(Enable_PWM, (int)tempSpeed)
-    //myMotor->setSpeed((int)tempSpeed);
-    setDirection(1, (int)tempSpeed);
-    setLight(2);
-    //max 1440
-   }else{
-   if(unThrottleIn>1560 & unThrottleIn<2100){
-    //backwards
-    // max 2000 but remove anything way over
-
-    //set the speed from 0 to 255 again 
-    tempSpeed=((unThrottleIn-1500)/1.96);
-
-    //check if the speed comes to above 255 for receiver/calculation problems and change that to 255
     if(tempSpeed>255){
       tempSpeed=255;
     }
-
-    //debug printing
-    //Serial.println((int)tempSpeed);
-
-    //set the speed and then tell the shield to go "backward" but this is arbitrary
-    //analogWrite(Enable_PWM, (int)tempSpeed)
-    //myMotor->setSpeed((int)tempSpeed);
-    setDirection(2, (int)tempSpeed);
+    setDirection(1, (int)tempSpeed);
     setLight(1);
+    //Serial.print(F("REV p=")); Serial.print(unThrottleIn); Serial.print(F(" s=")); Serial.println((int)tempSpeed);
    }else{
+   if(unThrottleIn >= 1500 & unThrottleIn <= 1900){
+    //forwards: 1500 = just above neutral, 1900 = full forward
+    //1.96-style scale: (1884-1468)/255 = 1.63 -> full forward = 255
+    tempSpeed = (unThrottleIn - 1468) / 1.63;
+    if(tempSpeed<0){
+      tempSpeed=0;
+    }
+    if(tempSpeed>255){
+      tempSpeed=255;
+    }
+    setDirection(2, (int)tempSpeed);
+    setLight(2);
+    //Serial.print(F("FWD p=")); Serial.print(unThrottleIn); Serial.print(F(" s=")); Serial.println((int)tempSpeed);
+   }else{
+    //Serial.print(F("NTRL p=")); Serial.println(unThrottleIn);
     //release the power to the motor and let the car roll
      setDirection(0, 0);
      setLight(0);

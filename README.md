@@ -11,12 +11,12 @@ Firmware for an Arduino Pro Mini (5V / 16MHz ATmega328P) RC car, read from a hob
 
 ## Versions
 
-The `RC_Car_FNG` folder contains two builds of the sketch:
+The repo contains two builds of the sketch, each in its own folder:
 
-| File                  | Version | Description                                                       |
-|-----------------------|---------|-------------------------------------------------------------------|
-| `RC_Car_FNG.ino`      | **v2**  | Current working build: median-of-3 dirty-data filter, retuned throttle ranges/scaling for the new receiver. |
-| `RC_Car_FNG_v1.ino`   | **v1**  | Original pre-tuning code kept as a reference/fallback.            |
+| Folder             | Version | Description                                                        |
+|--------------------|---------|--------------------------------------------------------------------|
+| `RC_Car_FNG_v2/`  | **v2**  | Current working build: median-of-3 dirty-data filter, retuned throttle ranges/scaling for a new car and receiver. An update of v1. |
+| `RC_Car_FNG_v1/`  | **v1**  | Original 2018 build, heavily modified from the original author's code. Kept as a reference. |
 
 ## Pin wiring
 
@@ -43,20 +43,22 @@ Both branches clamp the computed 0–255 speed to its boundaries, so any pulse b
 
 ## Flashing
 
-Compile with `arduino-cli`:
+Compile v2 with `arduino-cli`:
 
 ```
-arduino-cli compile --fqbn arduino:avr:pro:cpu=16MHzatmega328 RC_Car_FNG
+arduino-cli compile --fqbn arduino:avr:pro:cpu=16MHzatmega328 RC_Car_FNG_v2
 ```
 
 The Pro Mini in this project has no usable serial bootloader sync on the CP2102 adapter, so flashing is done over ISP using a Nano-as-ISP programmer:
 
 ```
-avrdude -C avrdude.conf -p atmega328p -c avrisp -P COM9 -b 57600 -e -U flash:w:RC_Car_FNG.ino.hex:i
+avrdude -C avrdude.conf -p atmega328p -c avrisp -P COM9 -b 57600 -e -U flash:w:RC_Car_FNG_v2.ino.hex:i
 ```
 
 > Use `-e` (chip erase) before writing and confirm the `bytes of flash verified` line — a write without erase can silently leave stale firmware on the chip.
 
 ## License
 
-Original receiver-reading code from [RCArduino Blog](http://rcarduino.blogspot.com/2012/01/how-to-read-rc-receiver-with.html).
+This project is licensed under the [MIT License](LICENSE).
+
+Receiver-reading code originally from [RCArduino Blog](http://rcarduino.blogspot.com/2012/01/how-to-read-rc-receiver-with.html), heavily modified.
