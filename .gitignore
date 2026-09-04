@@ -1,7 +1,3 @@
-# Original backup sketch (not part of the working build)
-RC_Car_FNGold.ino.old
-/RC_Car_FNG.ino
-
 # Arduino build artifacts
 *.hex
 build/

@@ -9,6 +9,15 @@ Firmware for an Arduino Pro Mini (5V / 16MHz ATmega328P) RC car, read from a hob
 - Applies a **median-of-3 dirty-data filter** so one-off corrupt pulse readings (noise/glitches that land inside a valid window) are discarded without causing motor surges, while still responding instantly to a genuine fast trigger throw.
 - Lights respond to the gear channel and to throttle direction.
 
+## Versions
+
+The `RC_Car_FNG` folder contains two builds of the sketch:
+
+| File                  | Version | Description                                                       |
+|-----------------------|---------|-------------------------------------------------------------------|
+| `RC_Car_FNG.ino`      | **v2**  | Current working build: median-of-3 dirty-data filter, retuned throttle ranges/scaling for the new receiver. |
+| `RC_Car_FNG_v1.ino`   | **v1**  | Original pre-tuning code kept as a reference/fallback.            |
+
 ## Pin wiring
 
 | Arduino pin | Function                              |
